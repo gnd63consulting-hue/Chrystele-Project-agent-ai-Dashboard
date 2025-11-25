@@ -20,24 +20,46 @@ export async function submitVideoRequest(data: VideoRequest): Promise<{
   video_id?: number
   status?: VideoStatus
 }> {
-  try {
-    const webhookUrl = getWebhookUrl()
+  const webhookUrl = getWebhookUrl()
 
+  console.log("📤 Submitting video request to:", webhookUrl)
+  console.log("📦 Payload:", JSON.stringify(data, null, 2))
+
+  try {
     const response = await fetch(webhookUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "Accept": "application/json",
       },
+      mode: "cors",
       body: JSON.stringify(data),
     })
 
+    console.log("📥 Response status:", response.status, response.statusText)
+
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
+      const errorText = await response.text().catch(() => "No error body")
+      console.error("❌ HTTP error:", response.status, errorText)
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
     }
 
-    return await response.json()
+    const responseData = await response.json()
+    console.log("✅ Response data:", responseData)
+
+    return responseData
   } catch (error) {
-    console.error("Error submitting video request:", error)
+    // Detailed error logging for debugging
+    if (error instanceof TypeError && error.message.includes("fetch")) {
+      console.error("❌ Network/CORS error - N8N webhook may be unreachable or CORS not configured")
+      console.error("💡 Solutions:")
+      console.error("   1. Ensure N8N workflow is ACTIVATED (green toggle)")
+      console.error("   2. Check N8N is configured to allow CORS")
+      console.error("   3. Verify webhook URL is correct:", webhookUrl)
+    } else {
+      console.error("❌ Error submitting video request:", error)
+    }
+
     return {
       success: false,
       message: error instanceof Error ? error.message : "Failed to submit video request",
