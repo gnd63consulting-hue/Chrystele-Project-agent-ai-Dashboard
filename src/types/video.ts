@@ -14,11 +14,25 @@ export type AspectRatio = "16:9" | "9:16" | "1:1"
 export type Route = "A" | "B" | "hybrid"
 export type ImprovementMode = "auto" | "semi" | "rebuild"
 
+// New modular base types
+export type BaseType = "generation" | "assets-provided" | "improvement"
+
+// Production options for modular approach
+export interface ProductionOptions {
+  motion_design: boolean
+  ai_slides: boolean
+  b_rolls: boolean
+  voice_ai: boolean
+  subtitles: boolean
+  long_format: boolean
+}
+
 export interface Video {
   id: number
   status: VideoStatus
   titre: string
   script: string
+  instructions?: string
   duree_cible: string
   type: VideoType
   aspect_ratio: AspectRatio
@@ -36,6 +50,7 @@ export interface Video {
   improvement_mode: ImprovementMode | null
   original_duration: string | null
   assets_path: string | null
+  production_options?: ProductionOptions
   metadata: Record<string, unknown>
   created_at: string
   updated_at: string
@@ -44,8 +59,10 @@ export interface Video {
 export interface VideoRequest {
   titre: string
   script: string
+  instructions?: string
   duree_cible: string
   type: VideoType
+  production_options?: ProductionOptions
   langue?: Language
   voix_type?: VoiceType
   voix_id?: string
@@ -57,6 +74,25 @@ export interface VideoRequest {
   improvement_mode?: ImprovementMode
   original_duration?: string
   assets_path?: string
+}
+
+// Helper function to convert base type + options to VideoType for N8N
+export function getVideoTypeFromOptions(
+  baseType: BaseType,
+  options: ProductionOptions
+): VideoType {
+  if (baseType === "assets-provided") {
+    return options.b_rolls || options.motion_design
+      ? "audio-slides-enhanced"
+      : "audio-slides-simple"
+  }
+  if (baseType === "improvement") {
+    return "improvement"
+  }
+  // baseType === 'generation'
+  if (options.motion_design) return "motion-design"
+  if (options.long_format) return "long-format"
+  return "audio-slides-enhanced"
 }
 
 export interface UploadedFile {

@@ -1,9 +1,17 @@
 import { supabase } from "./supabase"
 import type { VideoRequest, Video, VideoStatus, VideoType } from "@/types/video"
 
-const N8N_WEBHOOK_URL =
-  process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL ||
-  "https://n8n.srv989411.hstgr.cloud/webhook/video-request"
+// Default webhook URL
+const DEFAULT_WEBHOOK_URL = "https://n8n.srv989411.hstgr.cloud/webhook/video-request"
+
+// Get webhook URL from localStorage or environment or default
+function getWebhookUrl(): string {
+  if (typeof window !== "undefined") {
+    const storedUrl = localStorage.getItem("n8n_webhook_url")
+    if (storedUrl) return storedUrl
+  }
+  return process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || DEFAULT_WEBHOOK_URL
+}
 
 // Submit video request to N8N webhook
 export async function submitVideoRequest(data: VideoRequest): Promise<{
@@ -13,7 +21,9 @@ export async function submitVideoRequest(data: VideoRequest): Promise<{
   status?: VideoStatus
 }> {
   try {
-    const response = await fetch(N8N_WEBHOOK_URL, {
+    const webhookUrl = getWebhookUrl()
+
+    const response = await fetch(webhookUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
